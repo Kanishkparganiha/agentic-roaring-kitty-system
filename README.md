@@ -157,6 +157,71 @@ alembic downgrade -1
 - Real-time price updates and fundamental data ingestion
 - Efficient batch processing for historical data
 
+## Data Ingestion Service
+
+The data ingestion service handles fetching stock data from external APIs with production-grade reliability patterns.
+
+### Components
+
+```
+services/data_ingestion/
+├── rate_limiter.py   # Token Bucket rate limiting
+├── fetcher.py        # HTTP client with retry logic
+└── pipeline.py       # ETL orchestration
+```
+
+### Rate Limiter (Token Bucket Algorithm)
+
+Implements the Token Bucket algorithm for API rate limiting:
+
+```
+Bucket Capacity: N tokens
+Refill Rate: R tokens/second
+
+Token Calculation: T = min(M, T + elapsed_time × R)
+```
+
+**Why Token Bucket?**
+- Allows controlled bursts (e.g., loading a dashboard)
+- Smooths requests to steady rate over time
+- Industry standard for API rate limiting
+
+### HTTP Fetcher with Exponential Backoff
+
+Smart retry logic that backs off exponentially on failures:
+
+```
+Attempt 1: Wait 1 sec  → Retry
+Attempt 2: Wait 2 sec  → Retry
+Attempt 3: Wait 4 sec  → Retry
+Attempt 4: Wait 8 sec  → Retry
+Attempt 5: Wait 16 sec → Retry
+
+Formula: delay = base_delay × 2^attempt
+```
+
+**Benefits:**
+- Prevents overwhelming struggling servers
+- Gives external services time to recover
+- Standard pattern in distributed systems
+
+### ETL Pipeline
+
+```
+┌──────────┐    ┌───────────┐    ┌──────────┐
+│ EXTRACT  │ →  │ TRANSFORM │ →  │   LOAD   │
+│          │    │           │    │          │
+│ Fetch    │    │ Clean     │    │ Save to  │
+│ from API │    │ & Format  │    │ Database │
+└──────────┘    └───────────┘    └──────────┘
+```
+
+**Pipeline Features:**
+- Upsert logic (insert or update existing records)
+- Transaction management with rollback on failure
+- Structured logging for debugging
+- Support for batch processing multiple symbols
+
 **Analysis Engine**
 - Multi-factor scoring system
 - Financial metrics calculation (P/E, P/B, ROE, debt ratios)
