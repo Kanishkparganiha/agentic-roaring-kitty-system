@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
     api_key: Optional[str] = None
+    alpha_vantage_api_key: Optional[str] = None
 
 
     class Config:
